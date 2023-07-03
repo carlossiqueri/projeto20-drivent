@@ -6,12 +6,12 @@ import enrollmentRepository, { CreateEnrollmentParams } from '@/repositories/enr
 import { exclude } from '@/utils/prisma-utils';
 import { ViaCEPAddress } from '../../protocols';
 
-// TODO - Receber o CEP por parâmetro nesta função.
 async function getAddressFromCEP(cep: any) {
-  if (cep.length !== 8) {
+  const result = await request.get(`${process.env.VIA_CEP_API}/${cep}/json/`);
+  if (!result.data || result.data.erro) {
     throw notFoundError();
   }
-  const result = await request.get(`${process.env.VIA_CEP_API}/${cep}/json/`);
+  console.log(result.data);
   const formatedResult: ViaCEPAddress = {
     logradouro: result.data.logradouro,
     complemento: result.data.complemento,
@@ -51,7 +51,7 @@ async function createOrUpdateEnrollmentWithAddress(params: CreateOrUpdateEnrollm
   const enrollment = exclude(params, 'address');
   const address = getAddressForUpsert(params.address);
 
-  // TODO - Verificar se o CEP é válido antes de associar ao enrollment.
+  await getAddressFromCEP(address.cep);
 
   const newEnrollment = await enrollmentRepository.upsert(params.userId, enrollment, exclude(enrollment, 'userId'));
 
